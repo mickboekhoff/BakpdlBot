@@ -27,6 +27,8 @@ requirements = [
         'matplotlib~=3.5.1',
         'jinja2~=3.0.3',
         'appdirs~=1.4.4',
+        'fitparse',
+        'pandas',
         ]
 
 test_requirements = [ ]
