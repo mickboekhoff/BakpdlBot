@@ -104,6 +104,8 @@ async def event_embed(message, event, emojis=[]):
         for subtag in subgroup.tags:
             if 'trainer_difficulty_min' in subtag and not event.trainer_difficulty_min:
                 cat_rules = cat_rules + f'(TD:{float(get_tag_value(subtag, False)):.0%})'
+            if 'steering_disabled' in subtag:
+                cat_rules = cat_rules + '(no steering)'
         if subgroup.range_access_label:
             access = "{s.range_access_label}".format(s=subgroup)
         else:
