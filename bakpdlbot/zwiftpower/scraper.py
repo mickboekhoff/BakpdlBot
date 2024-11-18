@@ -722,3 +722,12 @@ class Scraper:
     @staticmethod
     def _is_logged_in(resp: Response):
         return html(resp).find('form#login', first=True) is None
+
+def get_scraper() -> Scraper:
+    # cache_dir = Path(user_cache_dir('bakpdlbot'))
+    # cache_dir.mkdir(parents=True, exist_ok=True)
+    # expire_after = timedelta(hours=12)
+    # cached = CachedSession(str(cache_dir / 'zp_cache'), expire_after=expire_after)
+    ZWIFTUSER = os.getenv('ZWIFT_USER')
+    ZWIFTPASS = os.getenv('ZWIFT_PASS')
+    return Scraper(sleep=1.0, username=ZWIFTUSER, password=ZWIFTPASS) #, session=cached)
