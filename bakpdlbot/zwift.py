@@ -236,10 +236,15 @@ class Zwift(commands.Cog):
         for m in eventlink.finditer(message.content):
             eid = int(m.group('eid'))
             secret = m.group('secret')
-            event = zwiftcom.get_event(eid, secret)
-            event.get_signups(self.scraper)
-            embed = await event_embed(message, event, emojis=self.emojis)
-            await message.reply(embed=embed)
+            try:
+                event = zwiftcom.get_event(eid, secret)
+                event.get_signups(self.scraper)
+                embed = await event_embed(message, event, emojis=self.emojis)
+                await message.reply(embed=embed)
+            except Exception as e:
+                if channel.name in ['bot-test']:
+                    await message.reply("Exception encountered:")
+                    await message.reply(str(e))
 
     @commands.command(name='zwiftid', help='Searches zwiftid of name')
     async def zwift_id(self, ctx, *args):
