@@ -79,6 +79,7 @@ class Eventish(ABC):
 
     def __init__(self, data: dict):
         self._data = data
+        self._signups = None
 
     def __getattr__(self, item):
         cc_item = ''.join(word.title() for word in item.split('_'))
@@ -107,6 +108,10 @@ class Event(Eventish):
     @property
     def url(self) -> str:
         return "https://www.zwift.com/events/view/{}".format(self.id)
+
+    def get_signups(self, scraper):
+        race = scraper.race(self.id)
+        self._signups = [rider for rider in race.signups if rider.teamid is not None and rider.teamid == '13264']
 
 
 def get_event(eid: int, secret: str = None) -> Event:

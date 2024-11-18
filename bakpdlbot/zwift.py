@@ -11,8 +11,7 @@ from . import zwiftcom
 from .sheet import Sheet
 from .zwiftcom import Event
 from .zwiftcom.const import items as list_of_items
-
-
+from .zwiftpower.scraper import get_scraper
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +120,18 @@ async def event_embed(message, event, emojis=[]):
         )
     embed.add_field(name='Cats', value="\n".join(cats_text), inline=False)
 
+
+    signup_text = []
+    for rider in event._signups:
+        signup_text.append(
+            "{emoji} {ridername}".format(
+                emoji=cat_emoji.get(rider.category),
+                ridername=rider.name
+            )
+        )
+    if signup_text:
+        embed.add_field(name='Signups', value="\n".join(signup_text), inline=False)
+
     if event.powerups:
         pus = []
         for pu in event.powerups:
@@ -210,6 +221,7 @@ class Zwift(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.emojis = None
+        self.scraper = get_scraper()
 
     @commands.Cog.listener("on_message")
     async def zwift_link_embed(self, message):
@@ -225,6 +237,7 @@ class Zwift(commands.Cog):
             eid = int(m.group('eid'))
             secret = m.group('secret')
             event = zwiftcom.get_event(eid, secret)
+            event.get_signups(self.scraper)
             embed = await event_embed(message, event, emojis=self.emojis)
             await message.reply(embed=embed)
 

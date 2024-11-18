@@ -4,8 +4,13 @@ import logging
 import re
 import time
 import traceback
+import os
 from typing import Iterator, List
 from html import unescape
+from datetime import datetime, timedelta
+# from pathlib import Path
+# from requests_cache import CachedSession
+# from appdirs import user_cache_dir
 
 import demjson3 as demjson
 import requests_html
@@ -290,6 +295,27 @@ class Entrant(Rider):
     def team(self):
         if self.tid:
             return self.scraper.team(self.tid)
+
+    @property
+    def category(self):
+        div_mapping = {
+            10: "A",
+            20: "B",
+            30: "C",
+            40: "D",
+            50: "E"
+        }
+        if self.div in div_mapping:
+            return div_mapping[self.div]
+        return str(self.div)
+
+    @property
+    def name(self):
+        return self.data['name']
+
+    @property
+    def teamid(self):
+        return self.data['tid']
 
 
 class Race(Fetchable):
