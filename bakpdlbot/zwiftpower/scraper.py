@@ -435,6 +435,7 @@ class Team(Fetchable):
 
 class Profile(Fetchable):
     URL_PROFILE = 'https://zwiftpower.com/profile.php?z={id}'
+    URL_SIGNUPS = 'https://zwiftpower.com/cache3/profile/{id}_signups.json'
     URL_RACES = 'https://zwiftpower.com/cache3/profile/{id}_all.json'
     URL_CP = 'https://zwiftpower.com/api3.php?do=critical_power_profile&zwift_id={id}&zwift_event_id=&type={type}'
 
@@ -443,6 +444,7 @@ class Profile(Fetchable):
         self.id = id_
         self._html = None
         self._races = None
+        self._signups = None
         self._cp_wkg = None
         self._cp_watts = None
 
@@ -474,6 +476,14 @@ class Profile(Fetchable):
     @property
     def ftp(self):
         return self.zftp
+
+    @property
+    def signups(self):
+        if not self._signups:
+            url = self.URL_SIGNUPS.format(id=self.id)
+            self._signups = self.scraper.get_url(url).json()['data']
+            self._signups = list(filter(lambda e: datetime.fromtimestamp(int(e['tm'])) < datetime.today()+timedelta(days=5), self._signups))
+        return self._signups
 
     @property
     def zftp(self):

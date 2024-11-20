@@ -1,17 +1,19 @@
 import logging
 import re
-from datetime import timedelta
+import asyncio
+from datetime import datetime, timedelta
 
 import ago
 import discord
 from discord import Member, PartialMessageable
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from . import zwiftcom
 from .sheet import Sheet
+from .simple import get_userlist
 from .zwiftcom import Event
 from .zwiftcom.const import items as list_of_items
-from .zwiftpower.scraper import get_scraper
+from .zwiftpower.scraper import get_scraper, Scraper
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ class TimeTag:
         return "<t:{0:.0f}>".format(self.datetime.timestamp())
 
 
-async def event_embed(message, event, emojis=[]):
+async def event_embed(event, emojis=[]):
     """Generate Embed object for a Zwift event"""
     cat_emoji = {}
     for c in 'ABCDE':
@@ -216,12 +218,72 @@ def get_item(item_id):
         return list_of_items[item_id]['name']
     return f"Unknown ({item_id})"
 
+def get_events_from_user_signups(scraper: Scraper, hours=4):
+    """Get all events that known users are signed up for"""
+    all_events = {}
+    user_list = get_userlist()['zwiftid'].to_list()
+    for riderid in user_list:
+        riderprofile = scraper.profile(str(riderid))
+        signups = riderprofile.signups
+        for signup in signups:
+            # Filter on events in the next x hours
+            if not datetime.timestamp(datetime.now())+(3600*hours)<signup["tm"]:
+                all_events[signup["zid"]]=signup["tm"]
+    return [eid[0] for eid in sorted(all_events.items(), key=lambda item: item[1])]
+
+async def message_signups_per_event(channel, eid: int, scraper: Scraper, emojis):
+    """Send a message per event containing users that have signed up for the event"""
+    event = zwiftcom.get_event(eid)
+    event.get_signups(scraper)
+    embed = await event_embed(event=event, emojis=emojis)
+    await channel.send(embed=embed)
+
+
 class Zwift(commands.Cog):
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.emojis = None
         self.scraper = get_scraper()
+        self.scheduled_signup_function.start()
+        self.target = None
+
+    @tasks.loop(seconds=1)
+    async def scheduled_signup_function(self, c_id=776164827126169600):
+        """Scheduled signup function"""
+
+        # Scheduled at 18:00 CET in weekdays, 8:00 CET in weekend
+        now = datetime.today()
+        hour = 18 if now.weekday() < 5 else 8
+        self.target = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        diff = (self.target - now).total_seconds()
+        if diff < 0:
+            next_day = (now + timedelta(days=1))
+            hour = 18 if next_day.weekday() < 5 else 8
+            self.target = next_day.replace(hour=hour, minute=0, second=0, microsecond=0)
+            diff = (self.target - now).total_seconds()
+        logger.debug("Scheduling signup check in <%s> seconds", diff)
+        await asyncio.sleep(diff)
+
+        self.emojis = await self.bot.get_guild(774255350585098291).fetch_emojis()
+        message_channel = (self.bot.get_channel(c_id) or await self.bot.fetch_channel(c_id))
+        eventlist = get_events_from_user_signups(self.scraper)
+        await message_channel.send("# Backpedal Signups in the upcoming 4 hours: \n"
+                             "Want to be added to this list? Type !add_signups yourzwiftid \n"
+                             "Want to be removed from this list? Type !del_signups yourzwiftid")
+        if not eventlist:
+            await message_channel.send("Nobody has signed up to an event! :sweat_smile:")
+        for event_id in eventlist:
+            await message_signups_per_event(
+                channel=message_channel,
+                eid=int(event_id),
+                scraper=self.scraper,
+                emojis=self.emojis)
+
+
+    @scheduled_signup_function.before_loop
+    async def before(self):
+        await self.bot.wait_until_ready()
 
     @commands.Cog.listener("on_message")
     async def zwift_link_embed(self, message):
@@ -238,8 +300,10 @@ class Zwift(commands.Cog):
             secret = m.group('secret')
             event = zwiftcom.get_event(eid, secret)
             event.get_signups(self.scraper)
-            embed = await event_embed(message, event, emojis=self.emojis)
+            embed = await event_embed(event, emojis=self.emojis)
             await message.reply(embed=embed)
+        if channel.name == "bot-test" and "check-target" in message.content:
+            await message.reply(self.target.isoformat())
 
     @commands.command(name='zwiftid', help='Searches zwiftid of name')
     async def zwift_id(self, ctx, *args):
