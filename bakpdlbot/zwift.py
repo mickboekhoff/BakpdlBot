@@ -218,6 +218,22 @@ def get_item(item_id):
         return list_of_items[item_id]['name']
     return f"Unknown ({item_id})"
 
+async def send_signups_to_channel(c_id: int, bot: commands.Bot, scraper: Scraper, emojis):
+    """Send signups to channel"""
+    message_channel = (bot.get_channel(c_id) or await bot.fetch_channel(c_id))
+    eventlist = get_events_from_user_signups(scraper)
+    await message_channel.send("# Backpedal Signups in the upcoming 4 hours: \n"
+                               "Want to be added to this list? Type !add_signups yourzwiftid \n"
+                               "Want to be removed from this list? Type !del_signups yourzwiftid")
+    if not eventlist:
+        await message_channel.send("Nobody has signed up to an event! :sweat_smile:")
+    for event_id in eventlist:
+        await message_signups_per_event(
+            channel=message_channel,
+            eid=int(event_id),
+            scraper=scraper,
+            emojis=emojis)
+
 def get_events_from_user_signups(scraper: Scraper, hours=4):
     """Get all events that known users are signed up for"""
     all_events = {}
@@ -236,7 +252,8 @@ async def message_signups_per_event(channel, eid: int, scraper: Scraper, emojis)
     event = zwiftcom.get_event(eid)
     event.get_signups(scraper)
     embed = await event_embed(event=event, emojis=emojis)
-    await channel.send(embed=embed)
+    if 'Signups' in [field.name for field in embed.fields]:
+        await channel.send(embed=embed)
 
 
 class Zwift(commands.Cog):
@@ -266,19 +283,12 @@ class Zwift(commands.Cog):
         await asyncio.sleep(diff)
 
         self.emojis = await self.bot.get_guild(774255350585098291).fetch_emojis()
-        message_channel = (self.bot.get_channel(c_id) or await self.bot.fetch_channel(c_id))
-        eventlist = get_events_from_user_signups(self.scraper)
-        await message_channel.send("# Backpedal Signups in the upcoming 4 hours: \n"
-                             "Want to be added to this list? Type !add_signups yourzwiftid \n"
-                             "Want to be removed from this list? Type !del_signups yourzwiftid")
-        if not eventlist:
-            await message_channel.send("Nobody has signed up to an event! :sweat_smile:")
-        for event_id in eventlist:
-            await message_signups_per_event(
-                channel=message_channel,
-                eid=int(event_id),
-                scraper=self.scraper,
-                emojis=self.emojis)
+        await send_signups_to_channel(
+            c_id=c_id,
+            bot=self.bot,
+            scraper=self.scraper,
+            emojis=self.emojis
+        )
 
 
     @scheduled_signup_function.before_loop
@@ -302,8 +312,16 @@ class Zwift(commands.Cog):
             event.get_signups(self.scraper)
             embed = await event_embed(event, emojis=self.emojis)
             await message.reply(embed=embed)
-        if channel.name == "bot-test" and "check-target" in message.content:
-            await message.reply(self.target.isoformat())
+        if channel.name == "bot-test":
+            if "check-target" in message.content:
+                await message.reply(self.target.isoformat())
+            if "!run_signups" in message.content:
+                await send_signups_to_channel(
+                    c_id=message.channel.id,
+                    bot=self.bot,
+                    scraper=self.scraper,
+                    emojis=self.emojis
+                )
 
     @commands.command(name='zwiftid', help='Searches zwiftid of name')
     async def zwift_id(self, ctx, *args):

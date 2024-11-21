@@ -6,6 +6,7 @@ import pendulum
 import requests
 
 from .const import worlds, routes
+from ..simple import get_userlist
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,10 @@ class Event(Eventish):
 
     def get_signups(self, scraper):
         race = scraper.race(self.id)
-        self._signups = [rider for rider in race.signups if rider.teamid is not None and rider.teamid == '13264']
+        check_signups = get_userlist()['zwiftid'].tolist()
+        self._signups = [rider for rider in race.signups if
+                         (rider.teamid is not None and rider.teamid == '13264') or
+                         (rider.id in check_signups)]
 
 
 def get_event(eid: int, secret: str = None) -> Event:
