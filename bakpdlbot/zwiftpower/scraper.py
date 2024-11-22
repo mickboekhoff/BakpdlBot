@@ -348,7 +348,10 @@ class Race(Fetchable):
     def signups(self) -> Iterator[Entrant]:
         if not self._signups:
             url = self.URL_SIGNUPS.format(id=self.id)
-            self._signups = self.scraper.get_url(url).json()
+            try:
+                self._signups = self.scraper.get_url(url).json()
+            except:
+                self._signups = {'data': []}
         for entrant in self._signups['data']:
             yield Entrant(entrant, scraper=self.scraper, container=self)
 
