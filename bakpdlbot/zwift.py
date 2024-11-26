@@ -125,9 +125,12 @@ async def event_embed(event, emojis=[]):
 
     signup_text = []
     for rider in event._signups:
+        semoji = cat_emoji.get(rider.category)
+        if semoji is None:
+            semoji = ":question:"
         signup_text.append(
             "{emoji} {ridername}".format(
-                emoji=cat_emoji.get(rider.category),
+                emoji=semoji,
                 ridername=rider.name
             )
         )

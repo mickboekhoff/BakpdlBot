@@ -298,16 +298,16 @@ class Entrant(Rider):
 
     @property
     def category(self):
-        div_mapping = {
-            10: "A",
-            20: "B",
-            30: "C",
-            40: "D",
-            50: "E"
+        label_mapping = {
+            1: "A",
+            2: "B",
+            3: "C",
+            4: "D",
+            5: "E"
         }
-        if self.div in div_mapping:
-            return div_mapping[self.div]
-        return str(self.div)
+        if self.label in label_mapping:
+            return label_mapping[self.label]
+        return str(self.label)
 
     @property
     def name(self):
