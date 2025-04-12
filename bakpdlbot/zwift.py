@@ -225,11 +225,12 @@ async def send_signups_to_channel(c_id: int, bot: commands.Bot, scraper: Scraper
     """Send signups to channel"""
     message_channel = (bot.get_channel(c_id) or await bot.fetch_channel(c_id))
     eventlist = get_events_from_user_signups(scraper)
-    await message_channel.send("# Backpedal Signups in the upcoming 4 hours: \n"
-                               "Want to be added to this list? Type !add_signups yourzwiftid \n"
-                               "Want to be removed from this list? Type !del_signups yourzwiftid")
+    # await message_channel.send("# Backpedal Signups in the upcoming 4 hours: \n"
+    #                            "Want to be added to this list? Type !add_signups yourzwiftid \n"
+    #                            "Want to be removed from this list? Type !del_signups yourzwiftid")
     if not eventlist:
-        await message_channel.send("Nobody has signed up to an event! :sweat_smile:")
+        # await message_channel.send("Nobody has signed up to an event! :sweat_smile:")
+        return
     for event_id in eventlist:
         await message_signups_per_event(
             channel=message_channel,
@@ -252,7 +253,22 @@ def get_events_from_user_signups(scraper: Scraper, hours=4):
 
 async def message_signups_per_event(channel, eid: int, scraper: Scraper, emojis):
     """Send a message per event containing users that have signed up for the event"""
-    event = zwiftcom.get_event(eid)
+    if eid in [
+        4918821,
+        4918824,
+        4918825,
+        4918827,
+        4918832,
+        4918836,
+        4918837,
+        4918838,
+        4918842,
+        4918843,
+        4918846
+    ]:
+        event = zwiftcom.get_event(eid=eid, secret='c6998d934e88430613f7')
+    else:
+        event = zwiftcom.get_event(eid)
     event.get_signups(scraper)
     embed = await event_embed(event=event, emojis=emojis)
     if 'Signups' in [field.name for field in embed.fields]:
