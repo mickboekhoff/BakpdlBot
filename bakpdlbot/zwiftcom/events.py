@@ -6,7 +6,7 @@ import pendulum
 import requests
 
 from .const import worlds, routes
-from ..simple import get_userlist
+from ..simple import get_userlist, get_eventsecrets
 
 logger = logging.getLogger(__name__)
 
@@ -125,5 +125,9 @@ def get_event(eid: int, secret: str = None) -> Event:
     else:
         params = {}
     resp = requests.get(url, params=params)
+    if resp.status_code == 403:
+        eventsecrets = get_eventsecrets()
+        for es in eventsecrets['eventsecrets'].tolist():
+            return get_event(eid=eid, secret=es)
     resp.raise_for_status()
     return Event(resp.json())

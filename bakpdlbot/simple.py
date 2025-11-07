@@ -10,6 +10,14 @@ def get_userlist():
         userlist.to_csv("user_signups.csv", index=False)
     return userlist
 
+def get_eventsecrets():
+    """Get event secrets"""
+    try:
+        eventsecretlist = pandas.read_csv("eventsecrets.csv")
+    except FileNotFoundError:
+        eventsecretlist = pandas.DataFrame({"eventsecrets": "f375bb9a1257cce25934"}, index=[0])
+        eventsecretlist.to_csv("eventsecrets.csv", index=False)
+    return eventsecretlist
 
 class SimpleCommands(commands.Cog):
 
@@ -53,6 +61,31 @@ class SimpleCommands(commands.Cog):
         """See the userlist"""
         userlist = get_userlist()['zwiftid'].to_list()
         await ctx.send(f"Zwiftids Signup Check: {', '.join([str(zid) for zid in userlist])}")
+
+    @commands.command(name='add_eventsecret', help='Add eventsecret')
+    async def add_eventsecret(self, ctx, *args):
+        """Add an eventsecret to the eventsecretlist"""
+        if len(args) > 0:
+            eventsecret = get_eventsecrets()
+            eventsecret = eventsecret.drop(eventsecret.index[eventsecret.eventsecrets == args[0]])
+            updated_eventsecret = pandas.concat([eventsecret, pandas.DataFrame({"eventsecrets": args[0]}, index=[0])])
+            updated_eventsecret.to_csv("eventsecrets.csv", index=False)
+            await ctx.send(f"Added {args[0]} to eventsecret list")
+
+    @commands.command(name='del_eventsecret', help='Remove eventsecret')
+    async def del_eventsecret(self, ctx, *args):
+        """Remove an eventsecret from the eventsecretlist"""
+        if len(args) > 0:
+            eventsecret = get_eventsecrets()
+            eventsecret = eventsecret.drop(eventsecret.index[eventsecret.eventsecrets == args[0]])
+            eventsecret.to_csv("eventsecrets.csv", index=False)
+            await ctx.send(f"Removed {args[0]} from eventsecret list")
+
+    @commands.command(name='see_eventsecret', help='See eventsecrets')
+    async def see_eventsecret(self, ctx):
+        """See the eventsecretlist"""
+        eventsecret = get_eventsecrets()['eventsecrets'].to_list()
+        await ctx.send(f"Event secrets: {', '.join([str(zid) for zid in eventsecret])}")
 
     # @commands.command(name='best', help='Shares info to Backpedal ESports Tour')
     # async def events(self, ctx):
