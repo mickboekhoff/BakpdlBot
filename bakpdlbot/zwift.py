@@ -203,6 +203,8 @@ def handle_event_tag(tag):
         return f'RW override: {get_tag_value(tag)}'
     elif 'completionprize' in tag:
         return f'Completionprize: {get_tag_value(tag)}'
+    elif 'disable_bike_upgrade_physics' in tag:
+        return f'Disable bike upgrades'
     return None
 
 def get_tag_value(tag, is_item=True):
@@ -253,22 +255,7 @@ def get_events_from_user_signups(scraper: Scraper, hours=4):
 
 async def message_signups_per_event(channel, eid: int, scraper: Scraper, emojis):
     """Send a message per event containing users that have signed up for the event"""
-    if eid in [
-        4918821,
-        4918824,
-        4918825,
-        4918827,
-        4918832,
-        4918836,
-        4918837,
-        4918838,
-        4918842,
-        4918843,
-        4918846
-    ]:
-        event = zwiftcom.get_event(eid=eid, secret='c6998d934e88430613f7')
-    else:
-        event = zwiftcom.get_event(eid)
+    event = zwiftcom.get_event(eid)
     event.get_signups(scraper)
     embed = await event_embed(event=event, emojis=emojis)
     if 'Signups' in [field.name for field in embed.fields]:
