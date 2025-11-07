@@ -205,6 +205,8 @@ def handle_event_tag(tag):
         return f'Completionprize: {get_tag_value(tag)}'
     elif 'disable_bike_upgrade_physics' in tag:
         return f'Disable bike upgrades'
+    elif 'steering_disabled' in tag:
+        return 'steering_disabled'
     return None
 
 def get_tag_value(tag, is_item=True):
