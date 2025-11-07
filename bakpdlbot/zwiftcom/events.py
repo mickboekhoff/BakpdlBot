@@ -125,7 +125,7 @@ def get_event(eid: int, secret: str = None) -> Event:
     else:
         params = {}
     resp = requests.get(url, params=params)
-    if resp.status_code == 403:
+    if resp.status_code == 403 and secret is None:
         eventsecrets = get_eventsecrets()
         for es in eventsecrets['eventsecrets'].tolist():
             return get_event(eid=eid, secret=es)
